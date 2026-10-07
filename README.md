@@ -2,7 +2,7 @@
 
 An end-to-end autonomous lead qualification and CRM orchestration engine built in n8n and powered by Google Gemini. This enterprise workflow ingests raw leads, standardizes and validates data, manages CRM contact states, leverages an AI Qualification Agent to assess conversion fit, creates pipeline opportunities, and crafts personalized executive follow-up emails.
 
----
+--
 
 ## 📌 Workflow Architecture
 
