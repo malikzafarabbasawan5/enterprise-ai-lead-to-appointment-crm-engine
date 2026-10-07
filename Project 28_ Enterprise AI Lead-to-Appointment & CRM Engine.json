@@ -1,0 +1,1023 @@
+{
+  "name": "Project 28: Enterprise AI Lead-to-Appointment & CRM Engine",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead-intake",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2608,
+        176
+      ],
+      "id": "410eaa77-198b-4d43-84de-b9c30a4472ff",
+      "name": "01 - Receive New Lead",
+      "webhookId": "4fd9a7d3-f7be-412c-93a5-be3e258cdd95"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || $input.first().json;\nreturn [{\n  json: {\n    lead_id: \"LEAD-\" + Math.floor(1000 + Math.random() * 9000),\n    name: body.name || \"Client Lead\",\n    email: (body.email || \"\").trim().toLowerCase(),\n    phone: body.phone || \"+1000000000\",\n    company: body.company || \"Enterprise Partner\",\n    budget: Number(body.budget) || 5000,\n    intent: body.intent || \"Needs enterprise AI automation platform\",\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2368,
+        176
+      ],
+      "id": "e4f6969e-0d85-46dd-a7cf-f91fc1ddd0cc",
+      "name": "02 - Clean & Standardize Lead"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a47f9b32-49ac-43d0-8f2b-2291be5c7ff9",
+              "leftValue": "={{ $json.email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -2112,
+        176
+      ],
+      "id": "0639b454-7604-4dbc-aafa-df4bd325b0c6",
+      "name": "03 - Validate Lead Data"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    status: \"REJECTED\",\n    reason: \"Missing mandatory email identifier\",\n    raw_payload: $input.first().json,\n    rejected_at: new Date().toISOString()\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1856,
+        320
+      ],
+      "id": "6e0aba21-2b97-4fd8-bba7-3c04ae2063b3",
+      "name": "04A - Prepare Invalid Lead Log"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/15nRVQvOi5KpHGMQb7olNx6q7GkelPPlCQwb77qNNGnA/edit?gid=0#gid=0",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/15nRVQvOi5KpHGMQb7olNx6q7GkelPPlCQwb77qNNGnA/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{ $now.format('YYYY-MM-DD HH:mm:ss') }}",
+            "Status": "={{ $json.status }}",
+            "Reason": "={{ $json.reason }}",
+            "Raw_Payload": "={{ JSON.stringify($json.raw_payload) }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Reason",
+              "displayName": "Reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Raw_Payload",
+              "displayName": "Raw_Payload",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1632,
+        320
+      ],
+      "id": "b60eb96e-c411-4954-85fb-58c7fb8cdfb1",
+      "name": "04B - Log Invalid Lead",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZWozehApm3jGgQww",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://jsonplaceholder.typicode.com/users?email={{ $json.email }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -1856,
+        -96
+      ],
+      "id": "e64bfc96-2683-41f2-b6cd-ac6e0ffb04b0",
+      "name": "05 - Search Contact in CRM",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "16b9fe9c-8a52-4c91-a2a7-2b5cb9a415cb",
+              "leftValue": "={{ $json.id ? true : ($json.length > 0 ? true : false) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1504,
+        -96
+      ],
+      "id": "bdc4762c-8db1-4d71-b1c9-10f0cba22182",
+      "name": "06 - Contact Exists?"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "https://jsonplaceholder.typicode.com/users/1",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -1296,
+        -240
+      ],
+      "id": "d1eb430b-0024-4565-a283-8d1b95b6b8f3",
+      "name": "07B - Update Existing Contact"
+    },
+    {
+      "parameters": {
+        "jsCode": "const lead = $('02 - Clean & Standardize Lead').item.json;\nreturn [{ json: { ...lead, is_returning_customer: true } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1072,
+        -240
+      ],
+      "id": "dc69d6bc-dafc-4727-9929-e60337e40876",
+      "name": "08B - Prepare Existing Lead for A"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://jsonplaceholder.typicode.com/users",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -1280,
+        -16
+      ],
+      "id": "4b5af779-3ebf-403c-bacc-ce840fe4d667",
+      "name": "07A - Create Contact in CRM"
+    },
+    {
+      "parameters": {
+        "jsCode": "const lead = $('02 - Clean & Standardize Lead').item.json;\nreturn [{ json: { ...lead, is_returning_customer: false } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1072,
+        -16
+      ],
+      "id": "72325e85-6ccd-4fe9-9f50-ae33af90d36c",
+      "name": "08A - Prepare Lead for AI"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Lead Name: {{ $json.name }}\nCompany: {{ $json.company }}\nBudget: ${{ $json.budget }}\nIntent: {{ $json.intent }}\nReturning Customer: {{ $json.is_returning_customer }}",
+        "options": {
+          "systemMessage": "You are an Enterprise Sales Operations AI Lead Evaluator.\nEvaluate the inbound lead's fit based on budget and commercial intent.\n\nRules:\n- \"QUALIFIED\": Budget >= $3000 and clear business intent.\n- \"UNQUALIFIED\": Budget < $3000 or vague spammy intent.\n\nOutput strictly raw JSON without markdown formatting:\n{\n  \"qualification_status\": \"QUALIFIED\" | \"UNQUALIFIED\",\n  \"lead_score\": 85,\n  \"deal_size_estimate\": \"$XX,XXX\",\n  \"qualification_notes\": \"One-line operational justification\"\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -816,
+        -144
+      ],
+      "id": "831112d7-7a1f-4af7-874a-1dec46113555",
+      "name": "9 - AI Lead Qualification"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        -832,
+        96
+      ],
+      "id": "a432e457-8fab-4ecc-95f3-47d21092efd3",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "KskgYheGpZvh6WAW",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "let parsedAI = {};\ntry {\n  parsedAI = JSON.parse($input.first().json.output);\n} catch (e) {\n  parsedAI = {\n    qualification_status: \"QUALIFIED\",\n    lead_score: 70,\n    deal_size_estimate: \"$5,000\",\n    qualification_notes: \"Standard intake\"\n  };\n}\n\nconst leadData = $('02 - Clean & Standardize Lead').item.json;\n\nreturn [{\n  json: {\n    ...leadData,\n    ...parsedAI\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -480,
+        -144
+      ],
+      "id": "4857ceb0-fac1-4852-94b5-0ea2b26163ec",
+      "name": "10 - Parse AI Qualificatio"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.qualification_status }}",
+                    "rightValue": "QUALIFIED",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "5595aca2-7e8e-437a-aefa-a91f9b8e9b70"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Qualified"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "7aaafd15-0ff5-4d27-95cf-a3b2ecd97992",
+                    "leftValue": "={{ $json.qualification_status }}",
+                    "rightValue": "UNQUALIFIED",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Unqualified"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -256,
+        -128
+      ],
+      "id": "bc4f1af7-cf28-45d2-9461-f040acaec019",
+      "name": "11 - Route by Qualification"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { ...$input.first().json, pipeline_stage: \"Discovery Scheduled\" } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -48,
+        -240
+      ],
+      "id": "64e6d533-6c51-4785-8cd5-33eb4a893435",
+      "name": "12A - Prepare Qualified Lead"
+    },
+    {
+      "parameters": {
+        "url": "https://jsonplaceholder.typicode.com/posts?userId=1",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        160,
+        -240
+      ],
+      "id": "61889ebc-2ddf-4d3f-a57e-31e7fbe277fd",
+      "name": "13 - Search Opportunity in CRM"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "01c0890b-72d5-46b9-90d2-eb9f0e528f7f",
+              "leftValue": "={{ $json.id ? true : ($json.length > 0 ? true : false) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        368,
+        -240
+      ],
+      "id": "52c2a290-5076-48f7-81e8-7b202bd00370",
+      "name": "14 - Opportunity Exists?"
+    },
+    {
+      "parameters": {
+        "url": "https://jsonplaceholder.typicode.com/posts/1",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        608,
+        -384
+      ],
+      "id": "7ed55fb9-218b-4770-aa77-e998c237a759",
+      "name": "15B - Update Existing Opportunity"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://jsonplaceholder.typicode.com/posts",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        592,
+        -192
+      ],
+      "id": "baa8cfa9-d079-407e-8516-fafb3f11d478",
+      "name": "15A - Create Opportunity in CRM"
+    },
+    {
+      "parameters": {
+        "jsCode": "const lead = $('12A - Prepare Qualified Lead').item.json;\nreturn [{ json: { ...lead, booking_link: \"https://cal.com/enterprise-team/discovery\" } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        832,
+        -304
+      ],
+      "id": "6e098a06-fe9e-4aa1-88ce-732ccf541a47",
+      "name": "16A - Prepare Qualified Follow-Up"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Client Name: {{ $('12A - Prepare Qualified Lead').item.json.name }}\nCompany: {{ $('12A - Prepare Qualified Lead').item.json.company }}\nIntent: {{ $('12A - Prepare Qualified Lead').item.json.intent }}\nBooking Link: {{ $json.booking_link }}",
+        "options": {
+          "systemMessage": "You are a Senior Enterprise Solutions Director. Write a short, highly professional introductory email acknowledging their requirements and inviting them to pick a slot using the booking link provided. Return clean text."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1088,
+        -304
+      ],
+      "id": "0f5d2bce-24d6-4cd3-80d1-d1d91b9243cc",
+      "name": "17 - Generate Personalized Response"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        1040,
+        -128
+      ],
+      "id": "77663789-3e00-4b72-a401-9fa4b0fc674b",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "KskgYheGpZvh6WAW",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  item.json.myNewField = 1;\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1424,
+        -304
+      ],
+      "id": "4fa36c6a-6c73-451f-8335-09b8610480fb",
+      "name": "18 - Parse Follow-Up Message"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('12A - Prepare Qualified Lead').item.json.email }}",
+        "subject": "=Next Steps: Partnership Discussion with {{ $('12A - Prepare Qualified Lead').item.json.company }}",
+        "emailType": "text",
+        "message": "={{ $json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1632,
+        -304
+      ],
+      "id": "fefef15a-1c56-4c15-b681-f26830e9665e",
+      "name": "20 - Send Qualified Follow-Up",
+      "webhookId": "b3b56388-3f36-4ef1-8a61-2d1bfd35542e",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOJsfsIV1jaxrs7E",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { ...$input.first().json, status: \"NURTURE_OR_DISQUALIFIED\" } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -48,
+        -48
+      ],
+      "id": "0829e143-e859-42a3-826d-0036f70dacb2",
+      "name": "12B - Prepare Unqualified Lead"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://jsonplaceholder.typicode.com/posts",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        160,
+        -48
+      ],
+      "id": "18e87abc-613e-4495-84c0-c8efff544ef2",
+      "name": "13B - Add Unqualified Lead Tag in CRM"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nreturn [{\n  json: {\n    timestamp: new Date().toISOString(),\n    lead_id: data.lead_id,\n    name: data.name,\n    email: data.email,\n    reason: data.qualification_notes || \"Budget below threshold\"\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        0
+      ],
+      "id": "b081dbb8-719f-4e2d-be2c-0b31e8cb2f90",
+      "name": "14B - Prepare Unqualified Lead Log"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1ma4rgkn1ZoNzH5tzHXBnolIMoCBUvpKae5u6Tdd7P2Q/edit?gid=0#gid=0",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ma4rgkn1ZoNzH5tzHXBnolIMoCBUvpKae5u6Tdd7P2Q/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{ $now.format('YYYY-MM-DD HH:mm:ss') }}",
+            "Lead_ID": "={{ $json.lead_id }}",
+            "Name ": "={{ $json.name }}",
+            "Email": "={{ $json.email }}",
+            "Reason": "={{ $json.reason }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Lead_ID",
+              "displayName": "Lead_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Name ",
+              "displayName": "Name ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Reason",
+              "displayName": "Reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        848,
+        0
+      ],
+      "id": "4695b33c-a41b-4ae5-8f46-cef0ed602530",
+      "name": "15C - Log Unqualified Lead",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZWozehApm3jGgQww",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "01 - Receive New Lead": {
+      "main": [
+        [
+          {
+            "node": "02 - Clean & Standardize Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "02 - Clean & Standardize Lead": {
+      "main": [
+        [
+          {
+            "node": "03 - Validate Lead Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "03 - Validate Lead Data": {
+      "main": [
+        [
+          {
+            "node": "05 - Search Contact in CRM",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "04A - Prepare Invalid Lead Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "04A - Prepare Invalid Lead Log": {
+      "main": [
+        [
+          {
+            "node": "04B - Log Invalid Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "05 - Search Contact in CRM": {
+      "main": [
+        [
+          {
+            "node": "06 - Contact Exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "06 - Contact Exists?": {
+      "main": [
+        [
+          {
+            "node": "07B - Update Existing Contact",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "07A - Create Contact in CRM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "07B - Update Existing Contact": {
+      "main": [
+        [
+          {
+            "node": "08B - Prepare Existing Lead for A",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "07A - Create Contact in CRM": {
+      "main": [
+        [
+          {
+            "node": "08A - Prepare Lead for AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "08B - Prepare Existing Lead for A": {
+      "main": [
+        [
+          {
+            "node": "9 - AI Lead Qualification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "08A - Prepare Lead for AI": {
+      "main": [
+        [
+          {
+            "node": "9 - AI Lead Qualification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "9 - AI Lead Qualification",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "9 - AI Lead Qualification": {
+      "main": [
+        [
+          {
+            "node": "10 - Parse AI Qualificatio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "10 - Parse AI Qualificatio": {
+      "main": [
+        [
+          {
+            "node": "11 - Route by Qualification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "11 - Route by Qualification": {
+      "main": [
+        [
+          {
+            "node": "12A - Prepare Qualified Lead",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "12B - Prepare Unqualified Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "12A - Prepare Qualified Lead": {
+      "main": [
+        [
+          {
+            "node": "13 - Search Opportunity in CRM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "13 - Search Opportunity in CRM": {
+      "main": [
+        [
+          {
+            "node": "14 - Opportunity Exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "14 - Opportunity Exists?": {
+      "main": [
+        [
+          {
+            "node": "15B - Update Existing Opportunity",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "15A - Create Opportunity in CRM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "15B - Update Existing Opportunity": {
+      "main": [
+        [
+          {
+            "node": "16A - Prepare Qualified Follow-Up",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "15A - Create Opportunity in CRM": {
+      "main": [
+        [
+          {
+            "node": "16A - Prepare Qualified Follow-Up",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "16A - Prepare Qualified Follow-Up": {
+      "main": [
+        [
+          {
+            "node": "17 - Generate Personalized Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "17 - Generate Personalized Response",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "17 - Generate Personalized Response": {
+      "main": [
+        [
+          {
+            "node": "18 - Parse Follow-Up Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "18 - Parse Follow-Up Message": {
+      "main": [
+        [
+          {
+            "node": "20 - Send Qualified Follow-Up",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "12B - Prepare Unqualified Lead": {
+      "main": [
+        [
+          {
+            "node": "13B - Add Unqualified Lead Tag in CRM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "13B - Add Unqualified Lead Tag in CRM": {
+      "main": [
+        [
+          {
+            "node": "14B - Prepare Unqualified Lead Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "14B - Prepare Unqualified Lead Log": {
+      "main": [
+        [
+          {
+            "node": "15C - Log Unqualified Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "bed1bdfe-219f-4330-a1b4-cddbaee4b324",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fa2fd4966574db7289205074e7b81781b706d11259d5e83c66766e93f08e3704"
+  },
+  "nodeGroups": [],
+  "id": "mhUPMgVjXRAP037w",
+  "tags": []
+}
